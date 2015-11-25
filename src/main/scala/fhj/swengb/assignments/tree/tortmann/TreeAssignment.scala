@@ -7,117 +7,94 @@ import scala.util.Random
 
 object Graph {
 
+  val counter = 1
   val colorMap =
     Map[Int, Color](
-      0 -> Color.ROSYBROWN,
-      1 -> Color.BROWN,
-      2 -> Color.SADDLEBROWN,
-      3 -> Color.INDIANRED,
-      4 -> Color.DARKGREEN,
-      5 -> Color.GREEN,
-      6 -> Color.YELLOWGREEN,
-      7 -> Color.GREENYELLOW,
-      8 -> Color.YELLOW
+      0 -> Color.DARKBLUE,
+      1 -> Color.MIDNIGHTBLUE,
+      2 -> Color.MEDIUMBLUE,
+      3 -> Color.DODGERBLUE,
+      4 -> Color.STEELBLUE,
+      5 -> Color.LIGHTBLUE,
+      6 -> Color.SILVER,
+      7 -> Color.WHITE,
+      8 -> Color.ANTIQUEWHITE
     )
 
-  /**
-    * creates a random tree
-    *
-    * @param pt
-    * @return
-    */
   def randomTree(pt: Pt2D): Tree[L2D] =
     mkGraph(pt, Random.nextInt(360), Random.nextDouble() * 150, Random.nextInt(7))
 
-
-  /**
-    * Given a Tree of L2D's and a function which can convert any L2D to a Line,
-    * you have to traverse the tree (visit all nodes) and create a sequence
-    * of Line's. The ordering of the lines is not important.
-    *
-    * @param tree  a tree which contains L2D instances
-    * @param convert a converter function
-    * @return
-    */
   def traverse[A, B](tree: Tree[A])(convert: A => B): Seq[B] = tree match{
         case Node(value) => Seq(convert(value))
         case Branch(left,right) => traverse(left)(convert) ++ traverse(right)(convert)
     }
-  /**
-    * Creates a tree graph.
-    *
-    * @param start the startpoint (root) of the tree
-    * @param initialAngle initial angle of the tree
-    * @param length the initial length of the tree
-    * @param treeDepth the depth of the tree
-    * @param factor the factor which the length is decreasing for every iteration
-    * @param angle the angle between a branch and the root
-    * @param colorMap color map, by default it is the colormap given in the companion object Graph
-    *
-    * @return a Tree[L2D] which can be traversed by other algorithms
-    */
+
   def mkGraph(start: Pt2D,
               initialAngle: AngleInDegrees,
               length: Double,
               treeDepth: Int,
               factor: Double = 0.75,
-              angle: Double = 45.0,
+              angle: Double = 35.0,
               colorMap: Map[Int, Color] = Graph.colorMap): Tree[L2D] = {
     assert(treeDepth <= colorMap.size, s"Treedepth higher than color mappings - bailing out ...")
-    ???
- }
 
+    /** REMINDER: required parameters for L2D
+      * def apply(start: Pt2D, angle: AngleInDegrees, length: Double, color: Color): L2D = {}
+      * val counter is initialized with the value 1
+      * */
+
+    def constructTree(root : L2D, counter: Int): Tree[L2D] = counter match {
+      case rootOnly if treeDepth == 0 => Node(root)
+      case nodesExist if counter == treeDepth =>
+        Branch(Node(root),                                                   /**constructing the root Node of the respective branch*/
+          Branch(
+              Node(root.left(factor,angle,colorMap(counter-1))),             /**constructing the left side of the respective branch*/
+              Node(root.right(factor,angle,colorMap(counter-1)))             /**constructing the right side of the respective branch*/
+          )
+        )
+      case _ =>
+        Branch(Node(root),
+          Branch(
+            constructTree(root.left(factor,angle,colorMap(counter-1)),counter+1),
+            constructTree(root.right(factor,angle,colorMap(counter-1)),counter+1)
+          )
+        )
+    }
+    constructTree(L2D(start,initialAngle,length,colorMap(counter-1)),counter)
+  }
 }
 
 object MathUtil {
 
-  /**
-    * rounds the given value to 3 decimal places.
-    *
-    * @param value  a double value
-    * @return
-    */
+  /**using the method BidDecimal from the scala.math package object
+    *  BigDecimal(input).setScale(precision,define rounding mode up/down) -> convert to a Double (...).toDouble
+  */
+
   def round(value: Double): Double = {
-    val x = BigDecimal(value).setScale(3, BigDecimal.RoundingMode.HALF_UP).toDouble
-    return x
+    val roundedValue = BigDecimal(value).setScale(3, BigDecimal.RoundingMode.HALF_UP).toDouble
+    return roundedValue
   }
 
-  /**
-    * turns an angle given in degrees to a value in radiants.
-    *
-    * @param angle
-    * @return
-    */
-  def toRadiants(angle: AngleInDegrees): AngleInRadiants = {
-    val x = angle.toRadians
-    return x
+  /** using the method toRadians(x: Double): Double from the scala.math package object
+    * to convert degrees to radiant
+  */
 
+  def toRadians(angle: AngleInDegrees): AngleInRadiants = {
+    val convertedAngle = angle.toRadians
+    return convertedAngle
   }
 }
-
 
 object L2D {
 
   import MathUtil._
 
-  /**
-    * Given a startpoint, an angle and a length the endpoint of the line
-    * is calculated and finally a L2D class is returned.
-    *
-    * @param start the startpoint
-    * @param angle the angle
-    * @param length the length of the line
-    * @param color the color
-    * @return
-    */
   def apply(start: Pt2D, angle: AngleInDegrees, length: Double, color: Color): L2D = {
-    val coordinateX = start.x + round(math.cos(toRadiants(angle))*length)
-    val coordinateY = start.y + round(math.sin(toRadiants(angle))*length)
+    val coordinateX = start.x + round(math.cos(toRadians(angle))*length)
+    val coordinateY = start.y + round(math.sin(toRadians(angle))*length)
     val end = Pt2D(coordinateX,coordinateY)
     return L2D(start,end,color)
   }
-
-
 }
 
 case class L2D(start: Pt2D, end: Pt2D, color: Color) {
@@ -150,7 +127,5 @@ case class L2D(start: Pt2D, end: Pt2D, color: Color) {
   def right(factor: Double, deltaAngle: AngleInDegrees, c: Color): L2D = {
     L2D(end, angle + deltaAngle, length * factor, c)
   }
-
-
 }
 
